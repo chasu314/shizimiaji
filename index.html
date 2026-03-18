@@ -2,19 +2,19 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>かわいいアイスキャッチゲーム</title>
+<title>アイスキャッチDX</title>
 <style>
 body {
     margin: 0;
     overflow: hidden;
-    font-family: "Arial";
     background: linear-gradient(#ffe4ec, #e0f7ff);
+    font-family: sans-serif;
 }
 
 canvas {
     display: block;
     margin: auto;
-    background: #ffffffaa;
+    background: #ffffffcc;
     border-radius: 20px;
 }
 
@@ -29,12 +29,11 @@ canvas {
     flex-direction: column;
     color: white;
 }
-
 button {
     padding: 12px 24px;
     font-size: 18px;
-    border: none;
     border-radius: 20px;
+    border: none;
     background: #ff8acb;
     color: white;
     cursor: pointer;
@@ -44,7 +43,7 @@ button {
 <body>
 
 <div id="start">
-    <h1>🍦 アイスキャッチ 🍦</h1>
+    <h1>🍦 アイスキャッチDX 🍦</h1>
     <button onclick="startGame()">スタート</button>
 </div>
 
@@ -58,9 +57,14 @@ canvas.height = 600;
 
 let cone, iceList, score, miss, level;
 let keys = {};
+let highScore = localStorage.getItem("iceHighScore") || 0;
+
+// 効果音
+const catchSound = new Audio("https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3");
+const missSound = new Audio("https://cdn.pixabay.com/download/audio/2022/03/15/audio_1b6c0c0f4f.mp3");
 
 function init(){
-    cone = {x:180,y:520,width:70,height:80,speed:14}; // ←速くした！
+    cone = {x:180,y:520,width:80,height:90,speed:14};
     iceList = [];
     score = 0;
     miss = 0;
@@ -77,59 +81,39 @@ function startGame(){
 function spawnIce(){
     iceList.push({
         x: Math.random()*360+20,
-        y: -30,
-        size: 30,
+        y: -40,
+        size: 50, // ←大きく！
         speed: 2 + Math.random()*2 + level*0.5,
         color: ["#ff9aa2","#ffdac1","#b5ead7","#c7ceea"][Math.floor(Math.random()*4)]
     });
-    setTimeout(spawnIce, 800 - level*50);
+    setTimeout(spawnIce, 900 - level*50);
 }
 
 function drawCone(){
-    // コーン
     ctx.fillStyle="#d29b5a";
     ctx.beginPath();
     ctx.moveTo(cone.x,cone.y);
     ctx.lineTo(cone.x+cone.width/2,cone.y+cone.height);
     ctx.lineTo(cone.x+cone.width,cone.y);
     ctx.fill();
-
-    // 模様
-    ctx.strokeStyle="#b5833a";
-    for(let i=0;i<5;i++){
-        ctx.beginPath();
-        ctx.moveTo(cone.x+i*14,cone.y);
-        ctx.lineTo(cone.x+cone.width/2,cone.y+cone.height);
-        ctx.stroke();
-    }
 }
 
 function drawIce(ic){
-    // コーン部分
-    ctx.fillStyle="#d29b5a";
-    ctx.beginPath();
-    ctx.moveTo(ic.x-10,ic.y+10);
-    ctx.lineTo(ic.x,ic.y+25);
-    ctx.lineTo(ic.x+10,ic.y+10);
-    ctx.fill();
-
-    // アイス（丸）
     ctx.fillStyle=ic.color;
     ctx.beginPath();
     ctx.arc(ic.x,ic.y,ic.size/2,0,Math.PI*2);
     ctx.fill();
 
-    // 顔（かわいい）
+    // 顔
     ctx.fillStyle="#000";
-    ctx.beginPath(); ctx.arc(ic.x-5,ic.y-2,2,0,Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.arc(ic.x+5,ic.y-2,2,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(ic.x-8,ic.y-5,3,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(ic.x+8,ic.y-5,3,0,Math.PI*2); ctx.fill();
     ctx.beginPath();
-    ctx.arc(ic.x,ic.y+3,4,0,Math.PI);
+    ctx.arc(ic.x,ic.y+5,6,0,Math.PI);
     ctx.stroke();
 }
 
 function update(){
-    // キーでスムーズ移動
     if(keys["ArrowLeft"] && cone.x>0) cone.x -= cone.speed;
     if(keys["ArrowRight"] && cone.x<canvas.width-cone.width) cone.x += cone.speed;
 
@@ -144,12 +128,19 @@ function update(){
 
         if(ic.y > cone.y && ic.x > cone.x && ic.x < cone.x+cone.width){
             score++;
+            catchSound.currentTime = 0;
+            catchSound.play();
+
             iceList.splice(i,1);
             i--;
-            if(score%10===0) level++;
+
+            level = Math.floor(score / 5) + 1;
         }
         else if(ic.y>canvas.height){
             miss++;
+            missSound.currentTime = 0;
+            missSound.play();
+
             iceList.splice(i,1);
             i--;
         }
@@ -159,10 +150,16 @@ function update(){
     ctx.fillText("Score:"+score,10,20);
     ctx.fillText("Miss:"+miss,10,40);
     ctx.fillText("Level:"+level,10,60);
+    ctx.fillText("High:"+highScore,10,80);
 
     if(miss>=5){
-        alert("ゲームオーバー！スコア："+score);
-        location.reload();
+        if(score > highScore){
+            localStorage.setItem("iceHighScore", score);
+        }
+        setTimeout(()=>{
+            alert("ゲームオーバー！\nスコア："+score+"\n最高記録："+Math.max(score, highScore));
+            location.reload();
+        },100);
     }
 }
 
@@ -171,11 +168,11 @@ function loop(){
     requestAnimationFrame(loop);
 }
 
-// キー操作
+// キー
 document.addEventListener("keydown",e=>keys[e.key]=true);
 document.addEventListener("keyup",e=>keys[e.key]=false);
 
-// マウス操作（高速追従）
+// マウス
 canvas.addEventListener("mousemove",e=>{
     const rect=canvas.getBoundingClientRect();
     cone.x = e.clientX - rect.left - cone.width/2;

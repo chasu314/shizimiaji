@@ -2,171 +2,184 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>Ice Catch Challenge</title>
+<title>かわいいアイスキャッチゲーム</title>
 <style>
-    body {
-        margin: 0;
-        overflow: hidden;
-        font-family: 'Arial', sans-serif;
-        background: linear-gradient(to bottom, #87ceeb, #ffffff);
-    }
+body {
+    margin: 0;
+    overflow: hidden;
+    font-family: "Arial";
+    background: linear-gradient(#ffe4ec, #e0f7ff);
+}
 
-    canvas {
-        display: block;
-        margin: auto;
-        background: rgba(255,255,255,0.6);
-        box-shadow: 0 0 20px rgba(0,0,0,0.2);
-    }
+canvas {
+    display: block;
+    margin: auto;
+    background: #ffffffaa;
+    border-radius: 20px;
+}
 
-    #startScreen {
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        background: rgba(0,0,0,0.7);
-        color: white;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        flex-direction: column;
-    }
+#start {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: #00000088;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    color: white;
+}
 
-    button {
-        padding: 10px 20px;
-        font-size: 18px;
-        border: none;
-        border-radius: 10px;
-        cursor: pointer;
-        background: #ff69b4;
-        color: white;
-    }
-
-    button:hover {
-        background: #ff1493;
-    }
+button {
+    padding: 12px 24px;
+    font-size: 18px;
+    border: none;
+    border-radius: 20px;
+    background: #ff8acb;
+    color: white;
+    cursor: pointer;
+}
 </style>
 </head>
 <body>
 
-<div id="startScreen">
-    <h1>🍦 Ice Catch Challenge 🍦</h1>
-    <p>コーンを動かしてアイスをキャッチしよう！</p>
-    <button onclick="startGame()">START</button>
+<div id="start">
+    <h1>🍦 アイスキャッチ 🍦</h1>
+    <button onclick="startGame()">スタート</button>
 </div>
 
-<canvas id="gameCanvas"></canvas>
+<canvas id="canvas"></canvas>
 
 <script>
-const canvas = document.getElementById("gameCanvas");
+const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 canvas.width = 400;
 canvas.height = 600;
 
-let cone, iceCreams, score, missed, level, speedMultiplier;
-let gameRunning = false;
+let cone, iceList, score, miss, level;
+let keys = {};
 
-function initGame() {
-    cone = { x: 180, y: 520, width: 60, height: 70, speed: 8 };
-    iceCreams = [];
+function init(){
+    cone = {x:180,y:520,width:70,height:80,speed:14}; // ←速くした！
+    iceList = [];
     score = 0;
-    missed = 0;
+    miss = 0;
     level = 1;
-    speedMultiplier = 1;
 }
 
-function startGame() {
-    document.getElementById("startScreen").style.display = "none";
-    initGame();
-    gameRunning = true;
+function startGame(){
+    document.getElementById("start").style.display="none";
+    init();
     spawnIce();
-    update();
+    loop();
 }
 
-function spawnIce() {
-    if (!gameRunning) return;
-    iceCreams.push({
-        x: Math.random() * (canvas.width - 30),
+function spawnIce(){
+    iceList.push({
+        x: Math.random()*360+20,
         y: -30,
         size: 30,
-        speed: (2 + Math.random() * 2) * speedMultiplier,
-        color: ["pink","lightblue","yellow","lightgreen"][Math.floor(Math.random()*4)]
+        speed: 2 + Math.random()*2 + level*0.5,
+        color: ["#ff9aa2","#ffdac1","#b5ead7","#c7ceea"][Math.floor(Math.random()*4)]
     });
-    setTimeout(spawnIce, 1000 - level*50);
+    setTimeout(spawnIce, 800 - level*50);
 }
 
-function drawCone() {
-    ctx.fillStyle = "#d2691e";
+function drawCone(){
+    // コーン
+    ctx.fillStyle="#d29b5a";
     ctx.beginPath();
-    ctx.moveTo(cone.x, cone.y);
-    ctx.lineTo(cone.x + cone.width / 2, cone.y + cone.height);
-    ctx.lineTo(cone.x + cone.width, cone.y);
-    ctx.closePath();
+    ctx.moveTo(cone.x,cone.y);
+    ctx.lineTo(cone.x+cone.width/2,cone.y+cone.height);
+    ctx.lineTo(cone.x+cone.width,cone.y);
     ctx.fill();
+
+    // 模様
+    ctx.strokeStyle="#b5833a";
+    for(let i=0;i<5;i++){
+        ctx.beginPath();
+        ctx.moveTo(cone.x+i*14,cone.y);
+        ctx.lineTo(cone.x+cone.width/2,cone.y+cone.height);
+        ctx.stroke();
+    }
 }
 
-function drawIce(ic) {
-    ctx.fillStyle = ic.color;
+function drawIce(ic){
+    // コーン部分
+    ctx.fillStyle="#d29b5a";
     ctx.beginPath();
-    ctx.arc(ic.x, ic.y, ic.size/2, 0, Math.PI*2);
+    ctx.moveTo(ic.x-10,ic.y+10);
+    ctx.lineTo(ic.x,ic.y+25);
+    ctx.lineTo(ic.x+10,ic.y+10);
     ctx.fill();
+
+    // アイス（丸）
+    ctx.fillStyle=ic.color;
+    ctx.beginPath();
+    ctx.arc(ic.x,ic.y,ic.size/2,0,Math.PI*2);
+    ctx.fill();
+
+    // 顔（かわいい）
+    ctx.fillStyle="#000";
+    ctx.beginPath(); ctx.arc(ic.x-5,ic.y-2,2,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(ic.x+5,ic.y-2,2,0,Math.PI*2); ctx.fill();
+    ctx.beginPath();
+    ctx.arc(ic.x,ic.y+3,4,0,Math.PI);
+    ctx.stroke();
 }
 
-function update() {
-    if (!gameRunning) return;
+function update(){
+    // キーでスムーズ移動
+    if(keys["ArrowLeft"] && cone.x>0) cone.x -= cone.speed;
+    if(keys["ArrowRight"] && cone.x<canvas.width-cone.width) cone.x += cone.speed;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0,0,canvas.width,canvas.height);
 
     drawCone();
 
-    for (let i = 0; i < iceCreams.length; i++) {
-        let ic = iceCreams[i];
+    for(let i=0;i<iceList.length;i++){
+        let ic = iceList[i];
         ic.y += ic.speed;
         drawIce(ic);
 
-        if (
-            ic.y + ic.size/2 > cone.y &&
-            ic.x > cone.x &&
-            ic.x < cone.x + cone.width
-        ) {
+        if(ic.y > cone.y && ic.x > cone.x && ic.x < cone.x+cone.width){
             score++;
-            iceCreams.splice(i,1);
+            iceList.splice(i,1);
             i--;
-            if (score % 10 === 0) {
-                level++;
-                speedMultiplier += 0.2;
-            }
+            if(score%10===0) level++;
         }
-        else if (ic.y > canvas.height) {
-            missed++;
-            iceCreams.splice(i,1);
+        else if(ic.y>canvas.height){
+            miss++;
+            iceList.splice(i,1);
             i--;
         }
     }
 
-    ctx.fillStyle = "#000";
-    ctx.fillText("Score: " + score, 10, 20);
-    ctx.fillText("Missed: " + missed, 10, 40);
-    ctx.fillText("Level: " + level, 10, 60);
+    ctx.fillStyle="#333";
+    ctx.fillText("Score:"+score,10,20);
+    ctx.fillText("Miss:"+miss,10,40);
+    ctx.fillText("Level:"+level,10,60);
 
-    if (missed >= 5) {
-        gameRunning = false;
-        alert("ゲームオーバー！ Score: " + score);
+    if(miss>=5){
+        alert("ゲームオーバー！スコア："+score);
         location.reload();
     }
-
-    requestAnimationFrame(update);
 }
 
-document.addEventListener("keydown", e => {
-    if (e.key === "ArrowLeft" && cone.x > 0) cone.x -= cone.speed;
-    if (e.key === "ArrowRight" && cone.x < canvas.width - cone.width)
-        cone.x += cone.speed;
-});
+function loop(){
+    update();
+    requestAnimationFrame(loop);
+}
 
-canvas.addEventListener("mousemove", e => {
-    const rect = canvas.getBoundingClientRect();
+// キー操作
+document.addEventListener("keydown",e=>keys[e.key]=true);
+document.addEventListener("keyup",e=>keys[e.key]=false);
+
+// マウス操作（高速追従）
+canvas.addEventListener("mousemove",e=>{
+    const rect=canvas.getBoundingClientRect();
     cone.x = e.clientX - rect.left - cone.width/2;
 });
-
 </script>
 
 </body>
